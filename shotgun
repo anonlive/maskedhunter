@@ -44,7 +44,7 @@ program
     .option('-p, --port <n>', 'port', parseInt)
     .parse(process.argv);
 
-var url = process.argv[2];
+var url = process.argv[process.argv.length - 1];
 if (!url) throw new Error('url required');
 url = parse(url);
 
@@ -65,28 +65,24 @@ while (startIp < endIp) {
 function send(checkIp, port, url) {
     var bucket = checkIp % configs.length;
     var secure = 'https:' == url.protocol;
-
     var opts = {
-        hostname: ip.fromLong(checkIp),
+        host: url.host,
         port: port || (secure ? 443 : 80),
-        method: 'HEAD',
+        method: 'GET',
         path: '/',
-        agent: secure ? httpsAgents[bucket] : httpAgents[bucket]
+        //agent: secure ? httpsAgents[bucket] : httpAgents[bucket],
+        headers: {
+            'Accept': '*/*',
+            'User-Agent': 'anon/shotgun'
+        }
     };
 
     var mod = secure ? https : http;
 
-    var sock = mod.get(opts, function(res) {
-        res.resume();
+    var sock = mod.request(opts, function(res){
         console.log(res.statusCode, res.headers);
     });
 
-    sock.on('close', function(){
-        process.stdout.write('Closed out!');
-    });
-
-    sock.on('error', function(){
-        --active;
-        process.stdout.write('Errored out!');
-    });
+    sock.write(req);
+    sock.end();
 }
