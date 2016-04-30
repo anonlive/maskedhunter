@@ -8,34 +8,34 @@
 var program = require('commander');
 var pkg = require('./package.json');
 var parse = require('url').parse;
-var net = require('net');
-var tls = require('tls');
 var ip = require('ip');
-
-// Set up socks agents using config.json
-var socks = require('socksv5');
-var http = require('http');
-var https = require('https');
+var Socks = require('socks');
 var _ = require('lodash');
 var fs = require('fs');
+var parser = require('http-string-parser');
 
-var httpsAgents = [], httpAgents = [];
+var socksOptions = [];
 
 var configs = JSON.parse(fs.readFileSync('config.json', 'utf8'));
 _.each(configs, function(config) {
-    var auth  = config.username? socks.auth.UserPassword(config.username, config.password) : socks.auth.None();
-    var socksConfig = {
-        proxyHost: config.host,
-        proxyPort: config.port,
-        auths: [ auth ]
+    var options = {
+        proxy: {
+            ipaddress: config.host,
+            port: config.port,
+            type: 5,
+            command: "connect",
+            authentication: {
+                username: config.username,
+                password: config.password
+            }
+        },
+        timeout: 10000
     };
-    httpAgents.push(new socks.HttpAgent(socksConfig));
-    httpsAgents.push(new socks.HttpsAgent(socksConfig));
+    socksOptions.push(options);
 });
 
 
 // Read args
-
 program
     .version(pkg.version)
     .usage('[options] <url>')
@@ -53,9 +53,14 @@ var endIp = ip.toLong(program.end) || program.end || 0xFFFFFFFF;
 var port = program.port;
 
 var req = [
-    'Host: ' + url.host + '\r\n',
-    'Accept: */*\r\n'
-].join('');
+    'GET ' + url.path + ' HTTP/1.1',
+    'Host: ' + url.host,
+    'Accept: */*',
+    'Connection: close',
+    'User-Agent: anon/shotgun',
+    '',
+    ''
+].join('\r\n');
 
 while (startIp < endIp) {
     send(startIp, port, url);
@@ -64,25 +69,23 @@ while (startIp < endIp) {
 
 function send(checkIp, port, url) {
     var bucket = checkIp % configs.length;
-    var secure = 'https:' == url.protocol;
-    var opts = {
-        host: url.host,
-        port: port || (secure ? 443 : 80),
-        method: 'GET',
-        path: '/',
-        //agent: secure ? httpsAgents[bucket] : httpAgents[bucket],
-        headers: {
-            'Accept': '*/*',
-            'User-Agent': 'anon/shotgun'
+    var proxyRequestOption = _.extend({}, socksOptions[bucket], {
+        target: {
+            host: ip.fromLong(checkIp),
+            port: port || url.protocol === "https" ? 443 : 80
         }
-    };
-
-    var mod = secure ? https : http;
-
-    var sock = mod.request(opts, function(res){
-        console.log(res.statusCode, res.headers);
     });
 
-    sock.write(req);
-    sock.end();
+    Socks.createConnection(proxyRequestOption, function(err, socket) {
+        if (!err) {
+            socket.on('data', function(data) {
+                var response = parser.parseResponse(data.toString());
+                var status = response.statusCode - 0;
+                if(status >= 200 & status < 400)
+                    console.log(proxyRequestOption.target.host);
+            });
+            socket.write(req);
+            socket.resume();
+        }
+    });
 }

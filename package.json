@@ -4,10 +4,11 @@
   "description": "Wear the mask and go hunting.",
   "dependencies": {
     "commander": "~1.2.0",
+    "http-string-parser": "0.0.5",
     "ip": "^1.1.2",
     "lodash": "~4.0.0",
     "request": "~2.72.0",
-    "socksv5": "~0.0.6"
+    "socks": "^1.1.9"
   },
   "bin": {
     "shotgun": "./shotgun"
