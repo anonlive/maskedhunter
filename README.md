@@ -5,7 +5,7 @@ A tool to scan sites while hiding behind proxies. Find the real IP addresses of 
 `npm install anonlive/maskedhunter`
 
 ## Usage
-`shotgun [options] url`
+`./shotgun [options] url`
 
 ## Options
 1. -s or --start: Specify IP range start address. Default: 0.0.0.0

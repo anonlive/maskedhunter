@@ -1,6 +1,6 @@
 {
-  "name": "maskedhunter",
-  "version": "0.0.1",
+  "name": "anonlive/maskedhunter",
+  "version": "1.0.0",
   "description": "Wear the mask and go hunting.",
   "dependencies": {
     "commander": "~1.2.0",
