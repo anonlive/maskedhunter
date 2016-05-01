@@ -2,7 +2,7 @@
 A tool to scan sites while hiding behind proxies. Find the real IP addresses of the sites that sites which might be under proxy services like cloudflare.
 
 ## Installation 
-`npm install anonlive/maskedhunter`
+`npm install maskedhunter`
 
 ## Usage
 `./shotgun [options] url`
